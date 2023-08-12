@@ -19,11 +19,14 @@ notify = "6.0.1"
 serde = { version = "1.0.164", features = ["derive", "rc"] }
 serde_json = "1.0.96"
 socketioxide = "0.3.0"
-tauri = { version = "1.3.0", features = [ "system-tray"] }
+tauri = { version = "1.4.1", features = ["system-tray"] }
 tauri-api = "0.7.6"
-tauri-build = "1.3.0"
+tauri-build = "1.4.0"
 tauri-plugin-autostart = { git = "https://github.com/tauri-apps/plugins-workspace?branch=v1" }
 tokio = { version = "1.29.1", features = ["sync", "macros"] }
+
+[patch.crates-io]
+ntapi = { git = "https://github.com/MSxDOS/ntapi.git", rev = "24fc1e47677fc9f6e38e5f154e6011dc9b270da6" }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
