@@ -232,7 +232,7 @@ fn main() {
                         })
                         .buttons(activity.data.buttons);
 
-                    client.set_activity(|_| activity).unwrap();
+                    client.set_activity(|_| activity).ok();
                 }
 
                 std::thread::sleep(std::time::Duration::from_millis(500));
@@ -293,8 +293,7 @@ fn main() {
                         async {}
                     });
 
-                    socket.on("setActivity", move |_, data: Value, _, _| {
-                        let data = serde_json::from_value::<SetActivityData>(data).unwrap();
+                    socket.on("setActivity", move |_, data: SetActivityData, _, _| {
                         tx2.send(data).unwrap();
                         async {}
                     });

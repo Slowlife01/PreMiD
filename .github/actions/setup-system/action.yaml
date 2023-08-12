@@ -12,10 +12,6 @@ inputs:
     description: Argument for the system setup script
     required: false
     default: ""
-  save-cache:
-    description: Whether to save the System cache
-    required: false
-    default: "false"
 runs:
   using: "composite"
   steps:
@@ -35,7 +31,7 @@ runs:
         version: "15"
 
     - name: Save LLVM and Clang
-      if: ${{ runner.os == 'Windows' && inputs.save-cache == 'true' }}
+      if: ${{ runner.os == 'Windows' }}
       id: cache-llvm-save
       uses: actions/cache/save@v3
       with:
@@ -54,5 +50,4 @@ runs:
       uses: ./.github/actions/setup-rust
       with:
         targets: ${{ inputs.targets }}
-        save-cache: ${{ inputs.save-cache }}
 
