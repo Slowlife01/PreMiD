@@ -6,13 +6,20 @@
 use auto_launch::AutoLaunchBuilder;
 use std::{env::current_exe, path::Path};
 use tauri::{
-    generate_handler, AppHandle, CustomMenuItem, Manager, RunEvent, State, SystemTray,
-    SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
+    generate_handler, AppHandle, CustomMenuItem, Manager, RunEvent, SystemTray, SystemTrayEvent,
+    SystemTrayMenu, SystemTrayMenuItem,
 };
 
-use axum::Server;
-use notify::Watcher;
+use axum::{
+    // body::Body,
+    // http::{Request, StatusCode},
+    // response::IntoResponse,
+    Server,
+};
 use socketioxide::{adapter::LocalAdapter, Namespace, Socket, SocketIoLayer};
+// use tower_http::validate_request::ValidateRequestHeaderLayer;
+
+use notify::Watcher;
 
 use crossbeam_channel::unbounded;
 use discord_presence::{
@@ -150,16 +157,7 @@ fn main() {
                     let socket = handle.try_state::<Mutex<Arc<Socket<LocalAdapter>>>>();
                     if let Some(socket) = socket {
                         let socket = socket.lock().unwrap();
-                        socket
-                            .emit(
-                                "localPresence",
-                                User {
-                                    id: "123".to_string(),
-                                    username: "test".to_string(),
-                                    avatar: None,
-                                },
-                            )
-                            .unwrap();
+                        // TODO: Load local presence
                     }
                 }
                 Err(_) => {}
@@ -192,7 +190,7 @@ fn main() {
                     let mut lock = client.lock().unwrap();
                     if lock.is_some() {
                         let client = lock.as_mut().unwrap();
-                        client.clear_activity().unwrap();
+                        client.clear_activity().ok();
                     }
                 }
 
@@ -208,7 +206,7 @@ fn main() {
                         != activity.client_id.parse::<u64>().unwrap()
                     {
                         let client = lock.as_mut().unwrap();
-                        client.clear_activity().unwrap();
+                        client.clear_activity().ok();
 
                         let mut client = Client::new(activity.client_id.parse().unwrap());
                         _ = client.start();
@@ -302,6 +300,17 @@ fn main() {
             .build();
 
         let app = axum::Router::new().layer(SocketIoLayer::new(ns));
+        // .layer(
+        //    Alpha sends an origin header (chrome-extension::*)
+        //
+        //     ValidateRequestHeaderLayer::custom(|request: &mut Request<Body>| {
+        //         if request.headers().contains_key("origin") {
+        //             Err(StatusCode::BAD_REQUEST.into_response())
+        //         } else {
+        //             Ok(())
+        //         }
+        //     }),
+        // );
 
         Server::bind(&"127.0.0.1:3020".parse().unwrap())
             .serve(app.into_make_service())

@@ -21,4 +21,5 @@ runs:
         key: ${{ inputs.targets }}
         prefix-key: "v0"
         shared-key: rust-deps
+        workspaces: "src-tauri -> ./target"
         cache-targets: ${{ runner.os != 'Windows' }}

@@ -2521,6 +2521,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-autostart",
  "tokio",
+ "tower-http",
 ]
 
 [[package]]
@@ -3897,6 +3898,7 @@ dependencies = [
  "http",
  "http-body",
  "http-range-header",
+ "mime",
  "pin-project-lite",
  "tower-layer",
  "tower-service",

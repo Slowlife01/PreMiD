@@ -24,6 +24,7 @@ tauri-api = "0.7.6"
 tauri-build = "1.4.0"
 tauri-plugin-autostart = { git = "https://github.com/tauri-apps/plugins-workspace?branch=v1" }
 tokio = { version = "1.29.1", features = ["sync", "macros"] }
+tower-http = { version = "0.4.3", features = ["validate-request"] }
 
 [patch.crates-io]
 ntapi = { git = "https://github.com/MSxDOS/ntapi.git", rev = "24fc1e47677fc9f6e38e5f154e6011dc9b270da6" }
