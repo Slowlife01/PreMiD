@@ -22,24 +22,3 @@ runs:
         prefix-key: "v0"
         shared-key: rust-deps
         cache-targets: ${{ runner.os != 'Windows' }}
-
-    - name: Restore cached Prisma codegen
-      id: cache-prisma-restore
-      uses: actions/cache/restore@v3
-      with:
-        key: prisma-1-${{ runner.os }}-${{ hashFiles('./src-tauri/prisma/*', './src-tauri/Cargo.toml') }}
-        path: ./src-tarui/src/db.rs
-
-    - name: Generate Prisma client
-      working-directory: src-tauri
-      if: ${{ steps.cache-prisma-restore.outputs.cache-hit != 'true' }}
-      shell: bash
-      run: cargo prisma generate
-
-    - name: Save Prisma codegen
-      id: cache-prisma-save
-      if: ${{ inputs.save-cache == 'true' }}
-      uses: actions/cache/save@v3
-      with:
-        key: ${{ steps.cache-prisma-restore.outputs.cache-primary-key }}
-        path: ./src-tarui/src/db.rs
