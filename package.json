@@ -1,0 +1,33 @@
+{
+  "name": "premid",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@fontsource-variable/outfit": "^5.0.8",
+    "@popperjs/core": "^2.11.8",
+    "@tauri-apps/api": "^1.4.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^2.4.2",
+    "@tauri-apps/cli": "^1.4.0",
+    "@tsconfig/svelte": "^3.0.0",
+    "@types/node": "^18.7.10",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.24",
+    "postcss-load-config": "^4.0.1",
+    "svelte": "^4.0.5",
+    "svelte-check": "^3.0.0",
+    "svelte-preprocess": "^5.0.0",
+    "tailwindcss": "^3.3.2",
+    "typescript": "^4.9.5",
+    "vite": "^4.2.1"
+  }
+}

@@ -1,0 +1,67 @@
+# spacedriveapp/spacedrive/.github/workflows/release.yml
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  desktop-main:
+    strategy:
+      fail-fast: true
+      matrix:
+        settings:
+          - host: macos-latest
+            target: x86_64-apple-darwin
+            bundles: dmg
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            bundles: dmg
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundles: msi
+          # - host: windows-latest
+          #   target: aarch64-pc-windows-msvc
+          - host: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
+            bundles: appimage
+          # - host: ubuntu-20.04
+          #   target: x86_64-unknown-linux-musl
+          # - host: ubuntu-20.04
+          #   target: aarch64-unknown-linux-gnu
+          # - host: ubuntu-20.04
+          #   target: aarch64-unknown-linux-musl
+          # - host: ubuntu-20.04
+          #   target: armv7-unknown-linux-gnueabihf
+    name: Desktop - Main ${{ matrix.settings.target }}
+    runs-on: ${{ matrix.settings.host }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Remove 32-bit libs
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          dpkg -l | grep i386
+          sudo apt-get purge --allow-remove-essential libc6-i386 ".*:i386"
+          sudo dpkg --remove-architecture i386
+
+      - name: Setup Node.js, pnpm and dependencies
+        uses: ./.github/actions/setup-pnpm
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup System and Rust
+        uses: ./.github/actions/setup-system
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          targets: ${{ matrix.settings.target }}
+
+      - name: Build
+        run: |
+          pnpm tauri build --ci -v --target ${{ matrix.settings.target }} --bundles ${{ matrix.settings.bundles }}
+
+      - name: Publish Artifacts
+        uses: ./.github/actions/publish-artifacts
+        with:
+          target: ${{ matrix.settings.target }}
+          profile: release
