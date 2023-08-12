@@ -14,7 +14,7 @@
       "active": true,
       "targets": "all",
       "identifier": "com.premid.app",
-      "icon": ["icons/icon.png"],
+      "icon": ["icons/icon.png", "icons/icon.ico"],
       "category": "Utility"
     },
     "systemTray": {
