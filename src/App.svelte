@@ -27,7 +27,7 @@
 
   setInterval(async () => {
     user = await getUser();
-  }, 500);
+  }, 2000);
 </script>
 
 <div

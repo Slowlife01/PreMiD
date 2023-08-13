@@ -10,12 +10,7 @@ use tauri::{
     SystemTrayMenu, SystemTrayMenuItem,
 };
 
-use axum::{
-    // body::Body,
-    // http::{Request, StatusCode},
-    // response::IntoResponse,
-    Server,
-};
+use axum::Server;
 use socketioxide::{adapter::LocalAdapter, Namespace, Socket, SocketIoLayer};
 // use tower_http::validate_request::ValidateRequestHeaderLayer;
 
@@ -41,7 +36,7 @@ struct User {
     avatar: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct SetActivityData {
     #[serde(rename(deserialize = "clientId"))]
     client_id: String,
@@ -49,7 +44,7 @@ struct SetActivityData {
     data: PresenceData,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct PresenceData {
     details: Option<String>,
     state: Option<String>,
@@ -76,19 +71,59 @@ struct AppState {
 
 #[tauri::command]
 fn get_user(handle: AppHandle) -> Result<User, ()> {
-    let state = handle.try_state::<AppState>();
+    let app_state = handle.try_state::<Arc<Mutex<Option<AppState>>>>();
+    let socket = handle.try_state::<Mutex<Arc<Socket<LocalAdapter>>>>();
 
-    if let Some(state) = state {
-        let state = state.deref();
+    if let Some(app_state) = app_state {
+        let lock = app_state.lock().unwrap();
+        let app_state = lock.deref().as_ref();
 
-        if let Some(user) = &state.user {
-            Ok(user.clone())
+        if let Some(app_state) = app_state {
+            return Ok(app_state.user.clone().unwrap());
         } else {
-            Err(())
+            drop(lock);
+
+            let socket = socket.clone();
+            if let Some(socket) = socket {
+                let mut client = Client::new(503557087041683458);
+                _ = client.start();
+
+                client.on_ready({
+                    let handle = handle.clone();
+                    let client = client.clone();
+
+                    move |ctx| {
+                        let user =
+                            serde_json::from_value::<User>(ctx.event["user"].clone()).unwrap();
+
+                        let app_state = handle.state::<Arc<Mutex<Option<AppState>>>>();
+                        let mut lock = app_state.lock().unwrap();
+
+                        *lock = Some(AppState {
+                            connected: true,
+                            user: Some(user),
+                        });
+                    }
+                });
+
+                std::thread::sleep(std::time::Duration::from_millis(500));
+
+                if let Some(app_state) = handle.try_state::<Arc<Mutex<Option<AppState>>>>() {
+                    let socket = socket.lock().unwrap();
+
+                    let app_state = app_state.lock().unwrap();
+                    let app_state = app_state.deref().as_ref();
+
+                    if let Some(app_state) = app_state {
+                        socket.emit("discordUser", app_state.user.clone()).unwrap();
+                        return Ok(app_state.user.clone().unwrap());
+                    }
+                }
+            }
         }
-    } else {
-        Err(())
     }
+
+    Err(())
 }
 
 fn main() {
@@ -138,6 +173,7 @@ fn main() {
 
             Ok(())
         })
+        .manage(Arc::new(Mutex::new(None::<AppState>)))
         .invoke_handler(generate_handler![get_user])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
@@ -150,17 +186,23 @@ fn main() {
 
     std::thread::spawn({
         let handle = handle.clone();
+        let tx2 = tx2.clone();
+
         move || {
             let client = Arc::new(Mutex::new(None::<Client>));
-            let watcher = notify::recommended_watcher(move |res| match res {
-                Ok(event) => {
-                    let socket = handle.try_state::<Mutex<Arc<Socket<LocalAdapter>>>>();
-                    if let Some(socket) = socket {
-                        let socket = socket.lock().unwrap();
-                        // TODO: Load local presence
+            let watcher = notify::recommended_watcher({
+                let handle = handle.clone();
+
+                move |res| match res {
+                    Ok(event) => {
+                        let socket = handle.try_state::<Mutex<Arc<Socket<LocalAdapter>>>>();
+                        if let Some(socket) = socket {
+                            let socket = socket.lock().unwrap();
+                            // TODO: Load local presence
+                        }
                     }
+                    Err(_) => {}
                 }
-                Err(_) => {}
             })
             .unwrap();
 
@@ -215,22 +257,31 @@ fn main() {
                     }
 
                     let client = lock.as_mut().unwrap();
-                    let activity = Activity::new()
-                        .details(activity.data.details)
-                        .state(activity.data.state)
-                        .timestamps(|t| {
-                            t.start(activity.data.start_timestamp)
-                                .end(activity.data.end_timestamp)
-                        })
-                        .assets(|a| {
-                            a.large_image(activity.data.large_image_key)
-                                .large_text(Some("PreMiD in RUST??".to_string()))
-                                .small_image(activity.data.small_image_key)
-                                .small_text(activity.data.small_image_text)
-                        })
-                        .buttons(activity.data.buttons);
 
-                    client.set_activity(|_| activity).ok();
+                    let data = activity.data.clone();
+                    let activity_data = Activity::new()
+                        .details(data.details)
+                        .state(data.state)
+                        .timestamps(|t| t.start(data.start_timestamp).end(data.end_timestamp))
+                        .assets(|a| {
+                            a.large_image(data.large_image_key)
+                                .large_text(Some("PreMiD in RUST??".to_string()))
+                                .small_image(data.small_image_key)
+                                .small_text(data.small_image_text)
+                        })
+                        .buttons(data.buttons);
+
+                    if let Err(err) = client.set_activity(|_| activity_data) {
+                        _ = client.start();
+
+                        tx2.send(activity).ok();
+                        let state = handle.try_state::<Arc<Mutex<Option<AppState>>>>();
+
+                        if let Some(state) = state {
+                            let mut state = state.lock().unwrap();
+                            *state = None;
+                        }
+                    }
                 }
 
                 std::thread::sleep(std::time::Duration::from_millis(500));
@@ -243,33 +294,21 @@ fn main() {
         let handle = handle.clone();
         let ns = Namespace::builder()
             .add("/", move |socket| {
-                let mut client = Client::new(503557087041683458);
-                _ = client.start();
-
-                client.on_ready({
-                    let socket = socket.clone();
-                    let handle = handle.clone();
-                    let client = client.clone();
-
-                    move |ctx| {
-                        drop(client.clone());
-
-                        let user =
-                            serde_json::from_value::<User>(ctx.event["user"].clone()).unwrap();
-
-                        socket.emit("discordUser", user.clone()).unwrap();
-                        handle.manage(AppState {
-                            connected: true,
-                            user: Some(user.clone()),
-                        });
-                    }
-                });
-
                 if !handle.manage(Mutex::new(socket.clone())) {
                     let state = handle.state::<Mutex<Arc<Socket<LocalAdapter>>>>();
                     let mut state = state.lock().unwrap();
                     *state = socket.clone();
                 };
+
+                let app_state = handle.try_state::<Arc<Mutex<Option<AppState>>>>();
+                if let Some(app_state) = app_state {
+                    let app_state = app_state.lock().unwrap();
+                    let state = app_state.as_ref();
+
+                    if let Some(state) = state {
+                        socket.emit("discordUser", state.user.clone()).unwrap();
+                    }
+                }
 
                 let tx2 = tx2.clone();
                 let tx3 = tx3.clone();
