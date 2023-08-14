@@ -109,7 +109,7 @@ fn get_user(handle: AppHandle) -> Result<User, ()> {
                 });
 
                 std::thread::sleep(std::time::Duration::from_millis(500));
-                drop(client);
+                drop(client.to_owned());
 
                 if let Some(app_state) = handle.try_state::<Arc<Mutex<Option<AppState>>>>() {
                     let socket = socket.lock().unwrap();
@@ -251,7 +251,7 @@ fn main() {
                         != activity.client_id.parse::<u64>().unwrap()
                     {
                         let client = lock.as_mut().unwrap();
-                        drop(client);
+                        drop(client.to_owned());
 
                         let mut client = Client::new(activity.client_id.parse().unwrap());
                         _ = client.start();
