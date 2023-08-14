@@ -90,11 +90,7 @@ fn get_user(handle: AppHandle) -> Result<User, ()> {
 
                 client.on_ready({
                     let handle = handle.clone();
-                    let client = client.clone();
-
                     move |ctx| {
-                        println!("Hello");
-
                         let user =
                             serde_json::from_value::<User>(ctx.event["user"].clone()).unwrap();
 
@@ -197,7 +193,7 @@ fn main() {
                 let handle = handle.clone();
 
                 move |res| match res {
-                    Ok(event) => {
+                    Ok(_) => {
                         let socket = handle.try_state::<Mutex<Arc<Socket<LocalAdapter>>>>();
                         if let Some(socket) = socket {
                             let socket = socket.lock().unwrap();
@@ -235,7 +231,7 @@ fn main() {
                     let mut lock = client.lock().unwrap();
                     if lock.is_some() {
                         let client = lock.as_mut().unwrap();
-                        drop(client);
+                        drop(client.to_owned());
                     }
                 }
 
@@ -274,7 +270,7 @@ fn main() {
                         })
                         .buttons(data.buttons);
 
-                    if let Err(err) = client.set_activity(|_| activity_data) {
+                    if let Err(_) = client.set_activity(|_| activity_data) {
                         _ = client.start();
                         tx2.send(activity).ok();
 
