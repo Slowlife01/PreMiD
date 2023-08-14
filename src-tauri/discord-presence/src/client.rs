@@ -39,6 +39,7 @@ pub struct Client {
 
 impl Drop for Client {
     fn drop(&mut self) {
+        self.clear_activity().ok();
         self.connection_manager.stop();
     }
 }

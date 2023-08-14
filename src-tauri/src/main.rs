@@ -93,6 +93,8 @@ fn get_user(handle: AppHandle) -> Result<User, ()> {
                     let client = client.clone();
 
                     move |ctx| {
+                        println!("Hello");
+
                         let user =
                             serde_json::from_value::<User>(ctx.event["user"].clone()).unwrap();
 
@@ -107,6 +109,7 @@ fn get_user(handle: AppHandle) -> Result<User, ()> {
                 });
 
                 std::thread::sleep(std::time::Duration::from_millis(500));
+                drop(client);
 
                 if let Some(app_state) = handle.try_state::<Arc<Mutex<Option<AppState>>>>() {
                     let socket = socket.lock().unwrap();
@@ -232,7 +235,7 @@ fn main() {
                     let mut lock = client.lock().unwrap();
                     if lock.is_some() {
                         let client = lock.as_mut().unwrap();
-                        client.clear_activity().ok();
+                        drop(client);
                     }
                 }
 
@@ -248,7 +251,7 @@ fn main() {
                         != activity.client_id.parse::<u64>().unwrap()
                     {
                         let client = lock.as_mut().unwrap();
-                        client.clear_activity().ok();
+                        drop(client);
 
                         let mut client = Client::new(activity.client_id.parse().unwrap());
                         _ = client.start();
@@ -273,8 +276,8 @@ fn main() {
 
                     if let Err(err) = client.set_activity(|_| activity_data) {
                         _ = client.start();
-
                         tx2.send(activity).ok();
+
                         let state = handle.try_state::<Arc<Mutex<Option<AppState>>>>();
 
                         if let Some(state) = state {
