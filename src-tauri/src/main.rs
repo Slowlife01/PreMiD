@@ -7,7 +7,7 @@ use auto_launch::AutoLaunchBuilder;
 use std::{env::current_exe, path::Path};
 use tauri::{
     generate_handler, AppHandle, CustomMenuItem, Manager, RunEvent, SystemTray, SystemTrayEvent,
-    SystemTrayMenu, SystemTrayMenuItem,
+    SystemTrayMenu, SystemTrayMenuItem, WindowEvent,
 };
 
 use axum::Server;
@@ -105,7 +105,7 @@ fn get_user(handle: AppHandle) -> Result<User, ()> {
                 });
 
                 std::thread::sleep(std::time::Duration::from_millis(500));
-                drop(client.to_owned());
+                client.clear();
 
                 if let Some(app_state) = handle.try_state::<Arc<Mutex<Option<AppState>>>>() {
                     let socket = socket.lock().unwrap();
@@ -138,6 +138,7 @@ fn main() {
             }
 
             SystemTray::new()
+                .with_tooltip("PreMiD")
                 .with_menu(
                     SystemTrayMenu::new()
                         .add_item(startup_menu_item)
@@ -145,6 +146,16 @@ fn main() {
                         .add_item(CustomMenuItem::new("quit".to_string(), "Quit")),
                 )
                 .on_event(move |event| match event {
+                    SystemTrayEvent::LeftClick { .. } => {
+                        let window = handle.get_window("main");
+                        match window {
+                            Some(window) => {
+                                window.show().unwrap();
+                                window.set_focus().unwrap();
+                            }
+                            None => {}
+                        };
+                    }
                     SystemTrayEvent::MenuItemClick { id, .. } => {
                         if id == "quit" {
                             handle.exit(0);
@@ -171,6 +182,13 @@ fn main() {
                 .build(app)?;
 
             Ok(())
+        })
+        .on_window_event(|e| match e.event() {
+            WindowEvent::CloseRequested { api, .. } => {
+                e.window().hide().unwrap();
+                api.prevent_close();
+            }
+            _ => {}
         })
         .manage(Arc::new(Mutex::new(None::<AppState>)))
         .invoke_handler(generate_handler![get_user])
@@ -231,7 +249,7 @@ fn main() {
                     let mut lock = client.lock().unwrap();
                     if lock.is_some() {
                         let client = lock.as_mut().unwrap();
-                        drop(client.to_owned());
+                        client.clear_activity().ok();
                     }
                 }
 
@@ -247,7 +265,7 @@ fn main() {
                         != activity.client_id.parse::<u64>().unwrap()
                     {
                         let client = lock.as_mut().unwrap();
-                        drop(client.to_owned());
+                        client.clear();
 
                         let mut client = Client::new(activity.client_id.parse().unwrap());
                         _ = client.start();
@@ -264,7 +282,7 @@ fn main() {
                         .timestamps(|t| t.start(data.start_timestamp).end(data.end_timestamp))
                         .assets(|a| {
                             a.large_image(data.large_image_key)
-                                .large_text(Some("PreMiD in RUST??".to_string()))
+                                .large_text(data.large_image_text)
                                 .small_image(data.small_image_key)
                                 .small_text(data.small_image_text)
                         })
@@ -356,12 +374,7 @@ fn main() {
             .unwrap();
     });
 
-    app.run(|_, e| match e {
-        RunEvent::ExitRequested { api, .. } => {
-            api.prevent_exit();
-        }
-        _ => {}
-    })
+    app.run(|_, _| {})
 }
 
 fn pick_folder() -> Result<String, ()> {

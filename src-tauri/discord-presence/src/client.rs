@@ -37,13 +37,6 @@ pub struct Client {
     event_handler_registry: HandlerRegistry<'static>,
 }
 
-impl Drop for Client {
-    fn drop(&mut self) {
-        self.clear_activity().ok();
-        self.connection_manager.stop();
-    }
-}
-
 #[cfg(feature = "bevy")]
 impl bevy::ecs::system::Resource for Client {}
 
@@ -121,6 +114,11 @@ impl Client {
     /// Clear the users current activity
     pub fn clear_activity(&mut self) -> Result<()> {
         self.execute(Command::SetActivity, SetActivityArgs::default(), None)
+    }
+
+    pub fn clear(&mut self) {
+        self.clear_activity().ok();
+        self.connection_manager.stop();
     }
 
     /// Register a handler for a given event

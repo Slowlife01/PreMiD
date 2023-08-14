@@ -59,8 +59,8 @@
     </div>
   {:else}
     <div class="flex flex-col items-center select-none">
-      <div class="text-white text-xl">Text Here</div>
-      <div class="text-white text-md">Text There</div>
+      <div class="text-white text-xl">Not connected</div>
+      <div class="text-white text-md">Trying to connect to Discord...</div>
     </div>
   {/if}
 </div>
