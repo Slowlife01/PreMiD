@@ -255,7 +255,7 @@ fn main() {
                         .timestamps(|t| t.start(data.start_timestamp).end(data.end_timestamp))
                         .assets(|a| {
                             a.large_image(data.large_image_key)
-                                .large_text("It's Rust.. kinda")
+                                .large_text(Option("It's Rust.. kinda".to_string()))
                                 .small_image(data.small_image_key)
                                 .small_text(data.small_image_text)
                         })
