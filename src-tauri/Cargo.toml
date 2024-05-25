@@ -22,7 +22,6 @@ socketioxide = "0.3.0"
 tauri = { version = "1.4.1", features = ["system-tray"] }
 tauri-api = "0.7.6"
 tauri-build = "1.4.0"
-tauri-plugin-autostart = { git = "https://github.com/tauri-apps/plugins-workspace?branch=v1" }
 tokio = { version = "1.29.1", features = ["sync", "macros"] }
 tower-http = { version = "0.4.3", features = ["validate-request"] }
 

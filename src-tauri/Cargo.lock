@@ -2519,7 +2519,6 @@ dependencies = [
  "tauri",
  "tauri-api",
  "tauri-build",
- "tauri-plugin-autostart",
  "tokio",
  "tower-http",
 ]
@@ -3552,19 +3551,6 @@ dependencies = [
  "syn 1.0.109",
  "tauri-codegen",
  "tauri-utils 1.4.0",
-]
-
-[[package]]
-name = "tauri-plugin-autostart"
-version = "0.0.0"
-source = "git+https://github.com/tauri-apps/plugins-workspace?branch=v1#7e58dc8502f654b99d51c087421f84ccc0e03119"
-dependencies = [
- "auto-launch",
- "log",
- "serde",
- "serde_json",
- "tauri",
- "thiserror",
 ]
 
 [[package]]

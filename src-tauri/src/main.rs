@@ -3,7 +3,6 @@
     windows_subsystem = "windows"
 )]
 
-use auto_launch::AutoLaunchBuilder;
 use std::{env::current_exe, path::Path};
 use tauri::{
     generate_handler, AppHandle, CustomMenuItem, Manager, RunEvent, SystemTray, SystemTrayEvent,
@@ -129,21 +128,11 @@ fn main() {
     let app = tauri::Builder::default()
         .setup(|app| {
             let handle = app.handle();
-            let auto_launch = setup_auto_launch(app);
-            let mut startup_menu_item =
-                CustomMenuItem::new("startup".to_string(), "Run on startup");
-
-            if auto_launch.is_enabled().unwrap() {
-                startup_menu_item = startup_menu_item.selected();
-            }
 
             SystemTray::new()
                 .with_tooltip("PreMiD")
                 .with_menu(
-                    SystemTrayMenu::new()
-                        .add_item(startup_menu_item)
-                        .add_native_item(SystemTrayMenuItem::Separator)
-                        .add_item(CustomMenuItem::new("quit".to_string(), "Quit")),
+                    SystemTrayMenu::new().add_item(CustomMenuItem::new("quit".to_string(), "Quit")),
                 )
                 .on_event(move |event| match event {
                     SystemTrayEvent::LeftClick { .. } => {
@@ -159,22 +148,6 @@ fn main() {
                     SystemTrayEvent::MenuItemClick { id, .. } => {
                         if id == "quit" {
                             handle.exit(0);
-                        } else if id == "startup" {
-                            if auto_launch.is_enabled().unwrap() {
-                                auto_launch.disable().unwrap();
-                                handle
-                                    .tray_handle()
-                                    .get_item(id.as_str())
-                                    .set_selected(false)
-                                    .unwrap();
-                            } else {
-                                auto_launch.enable().unwrap();
-                                handle
-                                    .tray_handle()
-                                    .get_item(id.as_str())
-                                    .set_selected(true)
-                                    .unwrap();
-                            }
                         }
                     }
                     _ => (),
@@ -387,15 +360,4 @@ fn pick_folder() -> Result<String, ()> {
     }
 
     Err(())
-}
-
-fn setup_auto_launch(app: &mut tauri::App) -> auto_launch::AutoLaunch {
-    let app_name = &app.package_info().name;
-    let current_exe = current_exe().unwrap();
-    AutoLaunchBuilder::new()
-        .set_app_name(&app_name)
-        .set_app_path(current_exe.to_str().unwrap())
-        .set_use_launch_agent(true)
-        .build()
-        .unwrap()
 }
